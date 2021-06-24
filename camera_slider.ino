@@ -141,6 +141,22 @@ void loop()
 	button4.loop();
     buttonEnd.loop();
 
+    if (button1.getState() == TACTILE_STATE_SHORT_PRESS) {
+        targetPosition[0] -= 1000;
+    }
+
+    if (button2.getState() == TACTILE_STATE_SHORT_PRESS) {
+        targetPosition[0] += 1000;
+    }
+
+    if (button3.getState() == TACTILE_STATE_SHORT_PRESS) {
+        targetPosition[0] = 0;
+    }
+
+    if (button4.getState() == TACTILE_STATE_SHORT_PRESS) {
+        targetPosition[0] = 81000;
+    }
+
     if ((_systemFlags & SYSTEM_FLAG_NEEDS_CALIBRATION) && !buttonEnd.checkFlag(TACTILE_FLAG_PRESSED)) {
         stepsPerSecond[0] = 0;
         _systemFlags &= ~SYSTEM_FLAG_NEEDS_CALIBRATION;
@@ -169,12 +185,15 @@ void loop()
     }
 
     if (_systemFlags & SYSTEM_FLAG_MOVE_TO_POSITION) {
+
+        targetPosition[0] = constrain(targetPosition[0], 0, 81000);
+
         int32_t error = targetPosition[0] - currentPosition[0];
 
         if (error > 0) {
-            stepsPerSecond[0] = 5000;
+            stepsPerSecond[0] = 3000;
         } else if (error < 0) {
-            stepsPerSecond[0] = -5000;
+            stepsPerSecond[0] = -3000;
         } else {
             _systemFlags |= SYSTEM_FLAG_OPERATIONAL;
             stepsPerSecond[0] = 0;
