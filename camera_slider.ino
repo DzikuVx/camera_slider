@@ -1,7 +1,7 @@
 // #include <Wire.h>
 // #include <Adafruit_VL53L0X.h>
 #include "QmuTactile.h"
-// #include "filter.h"
+#include "filter.h"
 // #include "QmuPid.h"
 
 #define PID_UPDATE_TASK_MS 50
@@ -55,10 +55,11 @@ enum systemFlags_e
   SYSTEM_FLAG_FORCE_FORWARD = 1 << 3, // 8 
   SYSTEM_FLAG_MOVE_TO_POSITION = 1 << 4, // 8 
   SYSTEM_FLAG_EMERGENCY_STOP = 1 << 5, // 8 
+  SYSTEM_FLAG_REQUESTING_POSITION = 1 << 6, // 16
 };
 
-
 uint8_t _systemFlags;
+pt1Filter_t targetPositionFilter;
 
 void setup()
 {
@@ -130,8 +131,11 @@ void setup()
 
 volatile int stepsPerSecond[2] = {0};
 
-int32_t currentPosition[2] = {0};
-int32_t targetPosition[2] = {0};
+int32_t currentPosition[2] = {0};   
+int32_t targetPosition[2] = {0};    //Hardware operated Position
+int32_t requestedPosition[2] = {0}; //User requested Position
+
+uint32_t nextSlewRate = 0;
 
 void loop()
 {
@@ -142,19 +146,41 @@ void loop()
     buttonEnd.loop();
 
     if (button1.getState() == TACTILE_STATE_SHORT_PRESS) {
-        targetPosition[0] = 1000;
+        requestedPosition[0] = 1000;
+        _systemFlags |= SYSTEM_FLAG_REQUESTING_POSITION;
     }
 
     if (button2.getState() == TACTILE_STATE_SHORT_PRESS) {
-        targetPosition[0] = 5000;
+        requestedPosition[0] = 5000;
+        _systemFlags |= SYSTEM_FLAG_REQUESTING_POSITION;
     }
 
     if (button3.getState() == TACTILE_STATE_SHORT_PRESS) {
-        targetPosition[0] = 0;
+        requestedPosition[0] = 0;
+        _systemFlags |= SYSTEM_FLAG_REQUESTING_POSITION;
     }
 
     if (button4.getState() == TACTILE_STATE_SHORT_PRESS) {
-        targetPosition[0] = 81000;
+        requestedPosition[0] = 81000;
+        _systemFlags |= SYSTEM_FLAG_REQUESTING_POSITION;
+    }
+
+    // When requested position settled, settle down
+    if ((_systemFlags & SYSTEM_FLAG_REQUESTING_POSITION) && targetPosition[0] == requestedPosition[0]) {
+        _systemFlags &= ~SYSTEM_FLAG_REQUESTING_POSITION;
+    }
+
+    if (millis() > nextSlewRate) {
+        if (_systemFlags & SYSTEM_FLAG_REQUESTING_POSITION) {
+
+            int32_t error = requestedPosition[0] - targetPosition[0];
+            int32_t acceleration = error * 100; // In steps per second
+            //Constain acceleration
+            acceleration = constrain(acceleration, -3000, 3000);
+            targetPosition[0] = targetPosition[0] + (acceleration / 100);
+        }
+
+        nextSlewRate = millis() + 10;
     }
 
     if ((_systemFlags & SYSTEM_FLAG_NEEDS_CALIBRATION) && !buttonEnd.checkFlag(TACTILE_FLAG_PRESSED)) {
@@ -184,7 +210,7 @@ void loop()
         _systemFlags |= SYSTEM_FLAG_EMERGENCY_STOP;
     }
 
-#define MIN_SPEED 200
+#define MIN_SPEED 400
 #define MAX_SPEED 3000
 #define SPEED_CONTROLLER_P 8.0f
 
