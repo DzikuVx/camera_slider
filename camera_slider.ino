@@ -62,8 +62,8 @@ pt1Filter_t targetPositionFilter;
 volatile int stepsPerSecond[2] = {0};
 
 #define SPEED_SLOW 750
-#define SPEED_MID 2000
-#define SPEED_FAST 3500
+#define SPEED_MID 1500
+#define SPEED_FAST 3000
 
 int32_t maxSpeed = SPEED_MID;
 
@@ -325,7 +325,7 @@ void loop()
 
                 if (currentState == LOW) {
                     currentState = HIGH;
-                    nextChange = micros() + 20;
+                    nextChange = micros() + 30;
 
                     if (stepsPerSecond[0] > 0) {
                         currentPosition[0]++;
@@ -334,7 +334,7 @@ void loop()
                     }
                 } else {
                     currentState = LOW;
-                    nextChange = micros() + (1000 * abs(1000.0f / stepsPerSecond[0])) - 20;
+                    nextChange = micros() + (1000 * abs(1000.0f / stepsPerSecond[0])) - 30;
                 }
 
                 if (stepsPerSecond[0] > 0) {
