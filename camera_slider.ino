@@ -3,6 +3,9 @@
 #include "QmuTactile.h"
 #include "filter.h"
 // #include "QmuPid.h"
+#include <WiFi.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 
 #define PID_UPDATE_TASK_MS 50
 
@@ -61,10 +64,76 @@ enum systemFlags_e
 uint8_t _systemFlags;
 pt1Filter_t targetPositionFilter;
 
+volatile int stepsPerSecond[2] = {0};
+
+int32_t currentPosition[2] = {0};   
+int32_t targetPosition[2] = {0};    //Hardware operated Position
+int32_t requestedPosition[2] = {0}; //User requested Position
+
+
+AsyncWebServer server(80);
+
+const char* ssid = "DiyCameraSlider";
+const char* password = "123456789";
+
+void notFound(AsyncWebServerRequest *request) {
+    request->send(404, "text/plain", "Not found");
+}
+
+String pageContent() {
+    String pageContent;
+    pageContent = "<!DOCTYPE html><html>";
+    pageContent += "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
+    pageContent += "<link rel=\"icon\" href=\"data:,\">";
+    pageContent += "<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}";
+    pageContent += ".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;";
+    pageContent += "text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}";
+    pageContent += ".button2 {background-color: #ff0000;}</style></head>";
+    
+    pageContent += "<body><h1>DIY Camera Slider</h1>";
+    
+    pageContent += "<p><a href=\"/forward\"><button class=\"button\">Forward</button></a></p>";
+    pageContent += "<p><a href=\"/stop\"><button class=\"button button2\">Stop</button></a></p>";
+    pageContent += "<p><a href=\"/backward\"><button class=\"button\">Backward</button></a></p>";
+        
+    pageContent += "</body></html>";
+
+    return pageContent;
+}
+
 void setup()
 {
-
     Serial.begin(115200);
+
+    WiFi.softAP(ssid, password);
+    IPAddress IP = WiFi.softAPIP();
+    Serial.print("AP IP address: ");
+    Serial.println(IP);
+
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "text/html", pageContent());
+    });
+
+    server.on("/forward", HTTP_GET, [](AsyncWebServerRequest *request){
+        requestedPosition[0] = 81000;
+        _systemFlags |= SYSTEM_FLAG_REQUESTING_POSITION;
+        request->send(200, "text/html", pageContent());
+    });
+
+    server.on("/backward", HTTP_GET, [](AsyncWebServerRequest *request){
+        requestedPosition[0] = 0;
+        _systemFlags |= SYSTEM_FLAG_REQUESTING_POSITION;
+        request->send(200, "text/html", pageContent());
+    });
+
+    server.on("/stop", HTTP_GET, [](AsyncWebServerRequest *request){
+        requestedPosition[0] = currentPosition[0];
+        _systemFlags |= SYSTEM_FLAG_REQUESTING_POSITION;
+        request->send(200, "text/html", pageContent());
+    });
+
+    server.onNotFound(notFound);
+    server.begin();
 
     // pinMode(16, OUTPUT);
     // digitalWrite(16, LOW); // set GPIO16 low to reset OLED
@@ -128,12 +197,6 @@ void setup()
     // 0);
 
 }
-
-volatile int stepsPerSecond[2] = {0};
-
-int32_t currentPosition[2] = {0};   
-int32_t targetPosition[2] = {0};    //Hardware operated Position
-int32_t requestedPosition[2] = {0}; //User requested Position
 
 uint32_t nextSlewRate = 0;
 
