@@ -1,8 +1,6 @@
 // #include <Wire.h>
-// #include <Adafruit_VL53L0X.h>
 #include "QmuTactile.h"
 #include "filter.h"
-// #include "QmuPid.h"
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -39,11 +37,8 @@ QmuTactile button3(PIN_BUTTON_3);
 QmuTactile button4(PIN_BUTTON_4);
 QmuTactile buttonEnd(PIN_END_STOP);
 
-TaskHandle_t driverTask;
 // TaskHandle_t driverPid;
 
-// QmuPid distanceToVelocity(1.0f, 0.0f, 0.0f, 0.0f);
-// QmuPid velocityToStep(10, 1.0f, 0.5f, 0);
 
 // QmuPid distanceToStep(0.1, 0, 50, 0);
 
@@ -66,10 +61,15 @@ pt1Filter_t targetPositionFilter;
 
 volatile int stepsPerSecond[2] = {0};
 
+#define SPEED_SLOW 750
+#define SPEED_MID 2000
+#define SPEED_FAST 3500
+
+int32_t maxSpeed = SPEED_MID;
+
 int32_t currentPosition[2] = {0};   
 int32_t targetPosition[2] = {0};    //Hardware operated Position
 int32_t requestedPosition[2] = {0}; //User requested Position
-
 
 AsyncWebServer server(80);
 
@@ -86,8 +86,8 @@ String pageContent() {
     pageContent += "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
     pageContent += "<link rel=\"icon\" href=\"data:,\">";
     pageContent += "<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}";
-    pageContent += ".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;";
-    pageContent += "text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}";
+    pageContent += ".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px; text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}";
+    pageContent += ".button-small { background-color: #0000ff; border: none; color: white; padding: 8px 20px; text-decoration: none; font-size: 15px; margin: 2px; cursor: pointer;}";
     pageContent += ".button2 {background-color: #ff0000;}</style></head>";
     
     pageContent += "<body><h1>DIY Camera Slider</h1>";
@@ -95,7 +95,13 @@ String pageContent() {
     pageContent += "<p><a href=\"/forward\"><button class=\"button\">Forward</button></a></p>";
     pageContent += "<p><a href=\"/stop\"><button class=\"button button2\">Stop</button></a></p>";
     pageContent += "<p><a href=\"/backward\"><button class=\"button\">Backward</button></a></p>";
-        
+    
+    pageContent += "<p>";
+    pageContent += "<a href=\"/slow\"><button class=\"button-small\">Slow</button></a>";
+    pageContent += "<a href=\"/mid\"><button class=\"button-small\">Mid</button></a>";
+    pageContent += "<a href=\"/fast\"><button class=\"button-small\">Fast</button></a>";
+    pageContent += "</p>";
+
     pageContent += "</body></html>";
 
     return pageContent;
@@ -128,7 +134,23 @@ void setup()
 
     server.on("/stop", HTTP_GET, [](AsyncWebServerRequest *request){
         requestedPosition[0] = currentPosition[0];
+        targetPosition[0] = currentPosition[0];
         _systemFlags |= SYSTEM_FLAG_REQUESTING_POSITION;
+        request->send(200, "text/html", pageContent());
+    });
+
+    server.on("/slow", HTTP_GET, [](AsyncWebServerRequest *request){
+        maxSpeed = SPEED_SLOW;
+        request->send(200, "text/html", pageContent());
+    });
+
+    server.on("/mid", HTTP_GET, [](AsyncWebServerRequest *request){
+        maxSpeed = SPEED_MID;
+        request->send(200, "text/html", pageContent());
+    });
+
+    server.on("/fast", HTTP_GET, [](AsyncWebServerRequest *request){
+        maxSpeed = SPEED_FAST;
         request->send(200, "text/html", pageContent());
     });
 
@@ -142,12 +164,6 @@ void setup()
 
     // I2C1.begin(I2C1_SDA_PIN, I2C1_SCL_PIN, 50000);
     // I2C2.begin(I2C2_SDA_PIN, I2C2_SCL_PIN, 400000);
-
-    // if (!lox.begin(0x29, false, &I2C2, Adafruit_VL53L0X::VL53L0X_SENSE_LONG_RANGE))
-    // {
-    //     Serial.println(F("Failed to boot VL53L0X"));
-    //     while(1);
-    // }
 
     pinMode(PIN_STEP1_DIRECTION, OUTPUT);
     pinMode(PIN_STEP1_STEP, OUTPUT);
@@ -165,18 +181,6 @@ void setup()
     buttonEnd.start();
 
     _systemFlags |= SYSTEM_FLAG_NEEDS_CALIBRATION;
-
-    // distanceToVelocity.setProperties(-100.0f, 100.0f);
-    // distanceToVelocity.setItermProperties(-10.0f, 10.0f);
-    // distanceToVelocity.setSetpoint(150.0f);
-
-    // velocityToStep.setProperties(-800.0f, 800.0f);
-    // velocityToStep.setItermProperties(-50.0f, 50.0f);
-
-
-    // distanceToStep.setProperties(-500.0f, 500.0f);
-    // distanceToStep.setItermProperties(-100.0f, 100.0f);
-    // distanceToStep.setSetpoint(150.0f);
 
     // xTaskCreatePinnedToCore(
     //     driverTaskHandler, /* Function to implement the task */
@@ -263,7 +267,7 @@ void loop()
         } else {
             stepsPerSecond[0] = 0;
             _systemFlags &= ~SYSTEM_FLAG_CALIBRATING;
-            currentPosition[0] = -700;
+            currentPosition[0] = -800;
             targetPosition[0] = 0;
             _systemFlags |= SYSTEM_FLAG_MOVE_TO_POSITION;
         }
@@ -274,7 +278,6 @@ void loop()
     }
 
 #define MIN_SPEED 400
-#define MAX_SPEED 3000
 #define SPEED_CONTROLLER_P 8.0f
 
     /*
@@ -288,14 +291,14 @@ void loop()
 
         int32_t targetSpeed = error * SPEED_CONTROLLER_P;
 
-        if (targetSpeed > MAX_SPEED) {
-            targetSpeed = MAX_SPEED;
-        } else if (targetSpeed < -MAX_SPEED) {
-            targetSpeed = -MAX_SPEED;
-        } else if (targetSpeed < MIN_SPEED && targetSpeed > 0) {
-            targetSpeed = MIN_SPEED;
-        } else if (targetSpeed > -MIN_SPEED && targetSpeed < 0) {
-            targetSpeed = -MIN_SPEED;
+        if (targetSpeed > maxSpeed) {
+            targetSpeed = maxSpeed;
+        } else if (targetSpeed < -maxSpeed) {
+            targetSpeed = -maxSpeed;
+        } else if (targetSpeed < maxSpeed && targetSpeed > 0) {
+            targetSpeed = maxSpeed;
+        } else if (targetSpeed > -maxSpeed && targetSpeed < 0) {
+            targetSpeed = -maxSpeed;
         }
         
         if (error != 0) {
