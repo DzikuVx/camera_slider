@@ -243,7 +243,7 @@ void loop()
             int32_t error = requestedPosition[0] - targetPosition[0];
             int32_t acceleration = error * 100; // In steps per second
             //Constain acceleration
-            acceleration = constrain(acceleration, -3000, 3000);
+            acceleration = constrain(acceleration, -81000, 81000);
             targetPosition[0] = targetPosition[0] + (acceleration / 100);
         }
 
