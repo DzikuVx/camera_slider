@@ -55,6 +55,8 @@ Buttons are for emergency situations.
 * 608 2RS 8x22x7mm bearing
 * [Tripod head](https://bit.ly/3wtL7te)
 * Tripod screw to attach the head
+* 2x 500mm  2020 V-slot alu profiles
+* 2020 hammer nuts
 * M3 and M5 nuts and screws
 * End switch
 * 5V stepdown voltage regulator
