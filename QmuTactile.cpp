@@ -17,7 +17,7 @@ void QmuTactile::loop(void) {
         _nextPressingEvent = 0;
     }
 
-    const uint32_t buttonTime = abs(millis() - _pressMillis);
+    const uint32_t buttonTime = abs((long) (millis() - _pressMillis));
 
     //Pressing
     if (pinState == LOW && buttonTime > TACTILE_PRESSING_TIME) {

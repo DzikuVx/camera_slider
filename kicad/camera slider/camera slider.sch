@@ -1,0 +1,145 @@
+EESchema Schematic File Version 4
+EELAYER 26 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L ESP32-footprints-Shem-Lib:ESP32-WROOM U1
+U 1 1 610F99CB
+P 3150 3050
+F 0 "U1" H 3125 4437 60  0000 C CNN
+F 1 "ESP32-WROOM" H 3125 4331 60  0000 C CNN
+F 2 "ESP32-footprints-Lib:ESP32-WROOM" H 3500 4400 60  0001 C CNN
+F 3 "" H 2700 3500 60  0001 C CNN
+	1    3150 3050
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push SW1
+U 1 1 610F9BD6
+P 5450 1250
+F 0 "SW1" H 5450 1443 50  0000 C CNN
+F 1 "SW_Push" H 5450 1444 50  0001 C CNN
+F 2 "" H 5450 1450 50  0001 C CNN
+F 3 "" H 5450 1450 50  0001 C CNN
+	1    5450 1250
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push SW2
+U 1 1 610F9C48
+P 5450 1600
+F 0 "SW2" H 5450 1793 50  0000 C CNN
+F 1 "SW_Push" H 5450 1794 50  0001 C CNN
+F 2 "" H 5450 1800 50  0001 C CNN
+F 3 "" H 5450 1800 50  0001 C CNN
+	1    5450 1600
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push SW3
+U 1 1 610F9C6E
+P 5450 1900
+F 0 "SW3" H 5450 2093 50  0000 C CNN
+F 1 "SW_Push" H 5450 2094 50  0001 C CNN
+F 2 "" H 5450 2100 50  0001 C CNN
+F 3 "" H 5450 2100 50  0001 C CNN
+	1    5450 1900
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push SW4
+U 1 1 610F9CD2
+P 5450 2200
+F 0 "SW4" H 5450 2393 50  0000 C CNN
+F 1 "SW_Push" H 5450 2394 50  0001 C CNN
+F 2 "" H 5450 2400 50  0001 C CNN
+F 3 "" H 5450 2400 50  0001 C CNN
+	1    5450 2200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5250 1250 4500 1250
+Wire Wire Line
+	4500 1250 4500 2700
+Wire Wire Line
+	4500 2700 4050 2700
+Wire Wire Line
+	5250 1600 4600 1600
+Wire Wire Line
+	4600 1600 4600 2400
+Wire Wire Line
+	4600 2400 4050 2400
+Wire Wire Line
+	5250 1900 4700 1900
+Wire Wire Line
+	4700 1900 4700 2900
+Wire Wire Line
+	4700 2900 4050 2900
+Wire Wire Line
+	5250 2200 4800 2200
+Wire Wire Line
+	4800 2200 4800 2300
+Wire Wire Line
+	4800 2300 4050 2300
+$Comp
+L power:GND #PWR?
+U 1 1 610F9F35
+P 5950 3350
+F 0 "#PWR?" H 5950 3100 50  0001 C CNN
+F 1 "GND" H 5955 3177 50  0000 C CNN
+F 2 "" H 5950 3350 50  0001 C CNN
+F 3 "" H 5950 3350 50  0001 C CNN
+	1    5950 3350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5650 2200 5950 2200
+Wire Wire Line
+	5650 1900 5950 1900
+Wire Wire Line
+	5950 1900 5950 2200
+Connection ~ 5950 2200
+Wire Wire Line
+	5650 1600 5950 1600
+Wire Wire Line
+	5950 1600 5950 1900
+Connection ~ 5950 1900
+Wire Wire Line
+	5650 1250 5950 1250
+Wire Wire Line
+	5950 1250 5950 1600
+Connection ~ 5950 1600
+$Comp
+L Switch:SW_Push SW4EndStop
+U 1 1 610FA468
+P 5350 3200
+F 0 "SW4EndStop" H 5350 3393 50  0000 C CNN
+F 1 "SW_Push" H 5350 3394 50  0001 C CNN
+F 2 "" H 5350 3400 50  0001 C CNN
+F 3 "" H 5350 3400 50  0001 C CNN
+	1    5350 3200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5150 3200 4050 3200
+Wire Wire Line
+	5950 3350 5950 3200
+Wire Wire Line
+	5950 3200 5550 3200
+Wire Wire Line
+	5950 2200 5950 3200
+Connection ~ 5950 3200
+Text GLabel 6500 4400 2    50   Input ~ 0
+EN
+$EndSCHEMATC
